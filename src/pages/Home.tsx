@@ -8,71 +8,23 @@ import NewsByPlatformReal from '../components/NewsByPlatformReal';
 import ComingSoon30DaysReal from '../components/ComingSoon30DaysReal';
 import TopNewsWeekReal from '../components/TopNewsWeekReal';
 import NewsByGenreReal from '../components/NewsByGenreReal';
-import TmdbConfig from '../components/TmdbConfig';
-import TmdbConnectionTest from '../components/TmdbConnectionTest';
 import Footer from '../components/Footer';
 import CTAFinal from '../components/CTAFinal';
-import { contentSync } from '../services/contentSync';
+// Pantalla de configuración TMDb eliminada: el proxy maneja autenticación
 
 const Home: React.FC = () => {
-  const [apiKeyConfigured, setApiKeyConfigured] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
+  // Estados eliminados: ya no se requiere configuración en UI
 
   useEffect(() => {
-    // Verificar si hay API key configurada
-    const checkApiKey = () => {
-      const apiKey = localStorage.getItem('tmdb_api_key');
-      setApiKeyConfigured(!!apiKey);
-    };
-
-    checkApiKey();
-    
-    // Escuchar cambios en el localStorage
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'tmdb_api_key') {
-        checkApiKey();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    // No-op
   }, []);
 
-  const handleApiKeyChange = (apiKey: string) => {
-    setApiKeyConfigured(!!apiKey);
-  };
-
-  const handleInitialSync = async () => {
-    if (!apiKeyConfigured) return;
-    
-    setIsSyncing(true);
-    try {
-      await contentSync.forceFullSync({ maxPages: 5 });
-      console.log('Sincronización inicial completada');
-    } catch (error) {
-      console.error('Error en sincronización inicial:', error);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
+  // Eliminadas funciones de configuración y sincronización manual
 
   return (
     <div className="min-h-screen bg-background text-foreground header-offset" id="main-content">
       <Header />
-      {/* Configuración de TMDb - Solo mostrar si no hay API key */}
-      {!apiKeyConfigured && (
-        <div className="container-main py-6">
-          <TmdbConfig onConfigChange={handleApiKeyChange} />
-          <TmdbConnectionTest className="mt-4" />
-        </div>
-      )}
-
-      {/* Prueba de conexión - Mostrar si hay API key */}
-      {apiKeyConfigured && (
-        <div className="container-main py-6">
-          <TmdbConnectionTest className="mb-4" />
-        </div>
-      )}
+      {/* Pantalla de configuración TMDb eliminada */}
 
       {/* Hero Carousel - según documentación herohome.md */}
       <HeroCarousel />
@@ -123,21 +75,7 @@ const Home: React.FC = () => {
           {/* Sección 10: Disponible en tus plataformas (ya implementada) */}
         </section>
 
-        {/* Botón de sincronización inicial - Solo mostrar si hay API key */}
-        {apiKeyConfigured && (
-          <section className="mt-12 text-center">
-            <button
-              onClick={handleInitialSync}
-              disabled={isSyncing}
-              className="bg-primary hover:bg-primary-dark disabled:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
-            >
-              {isSyncing ? 'Sincronizando...' : 'Sincronizar contenido'}
-            </button>
-            <p className="text-sm text-gray-400 mt-2">
-              Haz clic para sincronizar el contenido de las plataformas españolas
-            </p>
-          </section>
-        )}
+        {/* Sección de sincronización manual eliminada */}
 
         {/* Sección de plataformas - Mobile-first */}
         <section className="mt-12 md:mt-16">

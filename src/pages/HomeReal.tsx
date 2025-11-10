@@ -8,58 +8,19 @@ import NewsByPlatformReal from '../components/NewsByPlatformReal';
 import ComingSoon30DaysReal from '../components/ComingSoon30DaysReal';
 import TopNewsWeekReal from '../components/TopNewsWeekReal';
 import NewsByGenreReal from '../components/NewsByGenreReal';
-import TmdbConfig from '../components/TmdbConfig';
 import Footer from '../components/Footer';
 import CTAFinal from '../components/CTAFinal';
 import { contentSync } from '../services/contentSync';
 
 const Home: React.FC = () => {
-  const [apiKeyConfigured, setApiKeyConfigured] = useState(false);
+  const [apiKeyConfigured, setApiKeyConfigured] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
-    // Verificar si hay API key configurada
-    const checkApiKey = async () => {
-      const localKey = localStorage.getItem('tmdb_api_key');
-      // También considerar la variable de entorno expuesta por Vite en producción
-      let envKey: string | undefined;
-      try {
-        envKey = (import.meta as any)?.env?.VITE_TMDB_API_KEY;
-      } catch (_err) {
-        // ignorar si no está disponible
-      }
-
-      // Si no hay clave en cliente, intentar detectar proxy serverless
-      let proxyWorks = false;
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 4000);
-        const resp = await fetch('/api/hello', { signal: controller.signal });
-        clearTimeout(timeout);
-        proxyWorks = resp.ok;
-      } catch (_err) {
-        proxyWorks = false;
-      }
-
-      setApiKeyConfigured(!!localKey || !!envKey || proxyWorks);
-    };
-
-    checkApiKey();
-    
-    // Escuchar cambios en el localStorage
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'tmdb_api_key') {
-        checkApiKey();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    // UI de configuración eliminada; asumimos proxy funcional
   }, []);
 
-  const handleApiKeyChange = (apiKey: string) => {
-    setApiKeyConfigured(!!apiKey);
-  };
+  // Eliminada función de cambio de API key
 
   const handleInitialSync = async () => {
     if (!apiKeyConfigured) return;
@@ -85,12 +46,7 @@ const Home: React.FC = () => {
     <div className="min-h-screen bg-background text-foreground header-offset" id="main-content">
       <Header />
       
-      {/* Configuración de TMDb - Solo mostrar si no hay API key */}
-      {!apiKeyConfigured && (
-        <div className="container-main py-6">
-          <TmdbConfig onConfigChange={handleApiKeyChange} />
-        </div>
-      )}
+      {/* Pantalla de configuración TMDb eliminada */}
 
       {/* Hero Carousel Real - datos reales TMDb */}
       <HeroCarouselReal />
