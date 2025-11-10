@@ -19,7 +19,7 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     // Verificar si hay API key configurada
-    const checkApiKey = () => {
+    const checkApiKey = async () => {
       const localKey = localStorage.getItem('tmdb_api_key');
       // También considerar la variable de entorno expuesta por Vite en producción
       let envKey: string | undefined;
@@ -28,7 +28,20 @@ const Home: React.FC = () => {
       } catch (_err) {
         // ignorar si no está disponible
       }
-      setApiKeyConfigured(!!localKey || !!envKey);
+
+      // Si no hay clave en cliente, intentar detectar proxy serverless
+      let proxyWorks = false;
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4000);
+        const resp = await fetch('/api/hello', { signal: controller.signal });
+        clearTimeout(timeout);
+        proxyWorks = resp.ok;
+      } catch (_err) {
+        proxyWorks = false;
+      }
+
+      setApiKeyConfigured(!!localKey || !!envKey || proxyWorks);
     };
 
     checkApiKey();
