@@ -1,9 +1,4 @@
 {
-  "functions": {
-    "api/tmdb/[...path].js": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/tmdb/:path*",
