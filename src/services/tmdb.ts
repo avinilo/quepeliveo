@@ -1,14 +1,22 @@
-const getApiKey = (): string => {
-  // Intentar obtener del localStorage primero, luego de variables de entorno
-  const localKey = localStorage.getItem('tmdb_api_key');
+const getApiKey = (): string | null => {
+  // Intentar obtener del localStorage primero
+  const localKey = typeof window !== 'undefined' ? localStorage.getItem('tmdb_api_key') : null;
   if (localKey) {
     return localKey;
   }
-  
-  // Guardar la API key real en localStorage para persistencia
-  const apiKey = '2e764a03aa896a93077ec15f90f8ee4a';
-  localStorage.setItem('tmdb_api_key', apiKey);
-  return apiKey;
+
+  // Luego intentar obtener de variables de entorno (Vite)
+  try {
+    const envKey = (import.meta as any)?.env?.VITE_TMDB_API_KEY;
+    if (envKey) {
+      return envKey as string;
+    }
+  } catch (_err) {
+    // Ignorar si import.meta no está disponible (entorno no Vite)
+  }
+
+  // No disponible
+  return null;
 };
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
@@ -129,8 +137,10 @@ class TmdbService {
 
   private async fetchFromTmdb(endpoint: string, params: Record<string, any> = {}): Promise<any> {
     const apiKey = getApiKey();
+    const usingProxy = USE_PROXY && typeof window !== 'undefined';
     
-    if (!apiKey) {
+    // Si no usamos proxy y no hay API key, no podemos continuar
+    if (!apiKey && !usingProxy) {
       throw new Error('TMDB API key no configurada. Por favor configura tu API key en la configuración.');
     }
     
@@ -139,7 +149,7 @@ class TmdbService {
     let targetUrl = endpoint;
     
     // Si usamos proxy, modificar la URL
-    if (USE_PROXY && typeof window !== 'undefined') {
+    if (usingProxy) {
       baseUrl = '/api/tmdb';
       targetUrl = endpoint;
     }
@@ -162,7 +172,11 @@ class TmdbService {
     }
     
     // Agregar parámetros base
-    url.searchParams.set('api_key', apiKey);
+    // En desarrollo (Vite proxy) y en cliente, seguimos incluyendo api_key si está disponible.
+    // En producción (Vercel function) aunque el cliente la envíe, la función la ignorará y usará la del entorno.
+    if (apiKey) {
+      url.searchParams.set('api_key', apiKey);
+    }
     url.searchParams.set('language', LANGUAGE);
     
     // Agregar parámetros adicionales
