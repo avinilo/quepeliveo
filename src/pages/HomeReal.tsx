@@ -20,8 +20,15 @@ const Home: React.FC = () => {
   useEffect(() => {
     // Verificar si hay API key configurada
     const checkApiKey = () => {
-      const apiKey = localStorage.getItem('tmdb_api_key');
-      setApiKeyConfigured(!!apiKey);
+      const localKey = localStorage.getItem('tmdb_api_key');
+      // También considerar la variable de entorno expuesta por Vite en producción
+      let envKey: string | undefined;
+      try {
+        envKey = (import.meta as any)?.env?.VITE_TMDB_API_KEY;
+      } catch (_err) {
+        // ignorar si no está disponible
+      }
+      setApiKeyConfigured(!!localKey || !!envKey);
     };
 
     checkApiKey();

@@ -41,6 +41,15 @@ pnpm install
 - En la página principal, usa el bloque “Configuración TMDb” para guardar tu `tmdb_api_key` en el navegador.
 - Opcional: en “Pruebas de TMDb” (`/test-tmdb`) puedes ejecutar una sincronización completa y verificar los datos.
 
+### Variables de entorno (despliegue en Vercel)
+- El `.env` local NO se despliega a Vercel. Debes configurar variables en `Project Settings → Environment Variables`.
+- Para que el frontend (Vite) vea una variable en build, debe empezar por `VITE_`. Usa `VITE_TMDB_API_KEY` si quieres que la app no pida clave al cargar.
+- La función serverless en `/api/tmdb/[...path].js` usa `TMDB_API_KEY` en el entorno del servidor (no expuesta al cliente). Configúrala también para el proxy en producción.
+- Resumen recomendado en Vercel:
+  - `VITE_TMDB_API_KEY` → valor de tu API Key (expuesta al cliente en build)
+  - `TMDB_API_KEY` → mismo valor para el proxy serverless
+- Si NO quieres exponer la clave al cliente, puedes dejar `VITE_TMDB_API_KEY` vacío y la app te pedirá la API key para guardarla en `localStorage`. El proxy seguirá funcionando con `TMDB_API_KEY` en el servidor.
+
 Notas de CORS/proxy:
 - El cliente usa un proxy `'/api/tmdb'` en desarrollo para evitar CORS. En producción, necesitas configurar una función/proxy (por ejemplo, en Vercel) o desactivar el proxy y llamar directamente a TMDb si tu entorno lo permite.
 
