@@ -13,7 +13,6 @@ import CTAFinal from '../components/CTAFinal';
 import { contentSync } from '../services/contentSync';
 
 const Home: React.FC = () => {
-  const [apiKeyConfigured, setApiKeyConfigured] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
@@ -23,8 +22,6 @@ const Home: React.FC = () => {
   // Eliminada función de cambio de API key
 
   const handleInitialSync = async () => {
-    if (!apiKeyConfigured) return;
-    
     setIsSyncing(true);
     try {
       // Evitar arranque si ya hay otra sincronización en curso
@@ -115,21 +112,19 @@ const Home: React.FC = () => {
           </div>
         </section>
 
-        {/* Botón de sincronización inicial - Solo mostrar si hay API key */}
-        {apiKeyConfigured && (
-          <section className="mt-12 text-center">
-            <button
-              onClick={handleInitialSync}
-              disabled={isSyncing}
-              className="bg-primary hover:bg-primary-dark disabled:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
-            >
-              {isSyncing ? 'Sincronizando...' : 'Sincronizar contenido'}
-            </button>
-            <p className="text-sm text-gray-400 mt-2">
-              Haz clic para sincronizar el contenido de las plataformas españolas
-            </p>
-          </section>
-        )}
+        {/* Botón de sincronización inicial */}
+        <section className="mt-12 text-center">
+          <button
+            onClick={handleInitialSync}
+            disabled={isSyncing}
+            className="bg-primary hover:bg-primary-dark disabled:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
+          >
+            {isSyncing ? 'Sincronizando...' : 'Sincronizar contenido'}
+          </button>
+          <p className="text-sm text-gray-400 mt-2">
+            Haz clic para sincronizar el contenido de las plataformas españolas
+          </p>
+        </section>
       </main>
 
       {/* TabBar - Solo visible en móvil */}
