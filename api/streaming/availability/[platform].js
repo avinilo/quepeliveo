@@ -1,4 +1,4 @@
-// Proxy para Streaming Availability API (o equivalente) por plataforma
+// Proxy para Streaming Availability (RapidAPI) por plataforma
 // Configurable via env: STREAMING_AVAILABILITY_BASE, STREAMING_AVAILABILITY_KEY
 // Uso: /api/streaming/availability/netflix?page=1&page_size=100&types=movie,tv
 
@@ -26,12 +26,13 @@ export default async function handler(req, res) {
       else if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
     });
 
+    const rapidHost = (() => { try { return new URL(base).host; } catch { return 'streaming-availability.p.rapidapi.com'; } })();
     const resp = await fetch(url.toString(), {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        // Por defecto usar Bearer; si tu proveedor requiere X-RapidAPI-Key, ajusta aquí
-        'Authorization': `Bearer ${key}`
+        'X-RapidAPI-Key': key,
+        'X-RapidAPI-Host': rapidHost
       }
     });
     res.setHeader('Access-Control-Allow-Origin', '*');
