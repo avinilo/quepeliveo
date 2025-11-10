@@ -1,5 +1,6 @@
 import { tmdbService, ContentItem } from './tmdb';
 import { contentStorage } from './contentStorage';
+import { streamingCatalogService, PLATFORM_IDS, PlatformKey } from './streamingCatalogService';
 
 interface SyncOptions {
   providers?: number[];
@@ -224,6 +225,91 @@ class ContentSyncService {
     }
 
     return { foundIds, newContent, updatedContent };
+  }
+
+  // Sincronizar catálogos completos desde APIs externas y enriquecer con TMDb
+  async syncStreamingCatalogs(platforms: PlatformKey[] = Object.keys(PLATFORM_IDS) as PlatformKey[]): Promise<SyncResult> {
+    if (this.isSyncing) {
+      if (this.currentSyncPromise) return this.currentSyncPromise;
+      throw new Error('Sync already in progress');
+    }
+
+    this.isSyncing = true;
+    this.currentSyncPromise = (async (): Promise<SyncResult> => {
+      const result: SyncResult = {
+        newContent: 0,
+        updatedContent: 0,
+        removedContent: 0,
+        totalContent: 0,
+        errors: []
+      };
+
+      try {
+        const providerMap = new Map<string, number>(tmdbService.getSpanishStreamingProviders().map(p => [p.name, p.id]));
+        const platformNameMap: Record<PlatformKey, string> = {
+          netflix: 'Netflix',
+          prime: 'Prime Video',
+          disney: 'Disney+',
+          hbo: 'Max',
+          apple: 'Apple TV+',
+          filmin: 'Filmin',
+          movistar: 'Movistar Plus+'
+        };
+
+        for (const platform of platforms) {
+          try {
+            const entries = await streamingCatalogService.fetchCompleteCatalog(platform);
+            const providerId = providerMap.get(platformNameMap[platform]);
+
+            for (const entry of entries) {
+              // Requiere tmdbId para enriquecer
+              if (!entry.tmdbId) continue;
+              const type = entry.type;
+              // Rate limit suave
+              await this.delay(120);
+              const details = type === 'movie'
+                ? await tmdbService.getMovieDetails(entry.tmdbId)
+                : await tmdbService.getTVDetails(entry.tmdbId);
+              const item = tmdbService.processContentProviders(details, type);
+              if (!item) continue;
+              // Asegurar firstSeenAt para el proveedor de la plataforma
+              if (providerId) {
+                item.firstSeenAt = item.firstSeenAt || {};
+                const nowIso = new Date().toISOString();
+                item.firstSeenAt[String(providerId)] = item.firstSeenAt[String(providerId)] || nowIso;
+              }
+
+              const existing = contentStorage.getContentById(item.id);
+              if (!existing) {
+                result.newContent++;
+              } else if (this.hasSignificantChanges(existing, item)) {
+                result.updatedContent++;
+              }
+              contentStorage.addContent(item);
+            }
+
+            // Guardar catálogo crudo en IndexedDB
+            await streamingCatalogService.enrichAndStoreCatalog(platform);
+          } catch (e: any) {
+            result.errors.push(`Error syncing platform ${platform}: ${e?.message || e}`);
+          }
+        }
+
+        // Actualizar estadísticas y limpieza básica
+        result.totalContent = contentStorage.getAvailableContent().length;
+        contentStorage.cleanupOldContent();
+        contentStorage.updateLastSync();
+      } catch (err: any) {
+        result.errors.push(`General streaming sync error: ${err?.message || err}`);
+      } finally {
+        this.isSyncing = false;
+        this.currentSyncPromise = null;
+      }
+
+      return result;
+    })();
+
+    return this.currentSyncPromise;
   }
 
   // Verificar si hay cambios significativos en el contenido
