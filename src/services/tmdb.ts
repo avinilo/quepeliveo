@@ -233,21 +233,33 @@ class TmdbService {
     sortBy: string = 'popularity.desc'
   ): Promise<TmdbResponse<TmdbMovie | TmdbTV>> {
     const providerIds = providers.join('|');
-    
+
+    // Ventana de fechas: últimos 6 meses para ampliar resultados
+    const now = new Date();
+    const past180 = new Date();
+    past180.setDate(past180.getDate() - 180);
+    const gte = `${past180.getFullYear()}-${String(past180.getMonth() + 1).padStart(2, '0')}-${String(past180.getDate()).padStart(2, '0')}`;
+    const lte = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    const dateParams = type === 'movie'
+      ? { 'primary_release_date.gte': gte, 'primary_release_date.lte': lte }
+      : { 'first_air_date.gte': gte, 'first_air_date.lte': lte };
+
     return this.fetchFromTmdb(`/discover/${type}`, {
       watch_region: REGION,
       region: REGION,
       with_watch_providers: providerIds,
       with_watch_monetization_types: `${MONETIZATION_TYPES.FLATRATE}|${MONETIZATION_TYPES.RENT}|${MONETIZATION_TYPES.BUY}`,
-      // Aceptar más tipos de lanzamiento para capturar estrenos en plataformas
       // Tipos TMDB: 2 (Theatrical limitado), 3 (Theatrical), 4 (Digital), 6 (TV)
       with_release_type: type === 'movie' ? '2|3|4|6' : undefined,
       page,
       sort_by: sortBy,
-      // Filtros de calidad más laxos para no excluir estrenos recientes
-      'vote_count.gte': 10,
-      'vote_average.gte': 5.0,
-      language: LANGUAGE
+      // Filtros de calidad más laxos para ampliar cobertura
+      'vote_count.gte': 1,
+      'vote_average.gte': 1.0,
+      include_adult: false,
+      language: LANGUAGE,
+      ...dateParams
     });
   }
 
@@ -275,8 +287,39 @@ class TmdbService {
       sort_by: 'release_date.asc',
       ...dateParams,
       with_release_type: type === 'movie' ? '2|3|4|6' : undefined,
-      'vote_count.gte': 5, // más laxo para próximos estrenos
-      'vote_average.gte': 4.0,
+      'vote_count.gte': 1,
+      'vote_average.gte': 1.0,
+      language: LANGUAGE
+    });
+  }
+
+  // Descubrir contenido reciente (últimos N días) sin filtro de proveedores
+  async discoverRecentContent(
+    type: 'movie' | 'tv',
+    page: number = 1,
+    windowDays: number = 90
+  ): Promise<TmdbResponse<TmdbMovie | TmdbTV>> {
+    const now = new Date();
+    const past = new Date();
+    past.setDate(past.getDate() - windowDays);
+
+    const gte = `${past.getFullYear()}-${String(past.getMonth() + 1).padStart(2, '0')}-${String(past.getDate()).padStart(2, '0')}`;
+    const lte = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    const dateParams = type === 'movie'
+      ? { 'primary_release_date.gte': gte, 'primary_release_date.lte': lte }
+      : { 'first_air_date.gte': gte, 'first_air_date.lte': lte };
+
+    return this.fetchFromTmdb(`/discover/${type}`, {
+      watch_region: REGION,
+      region: REGION,
+      page,
+      sort_by: 'release_date.desc',
+      ...dateParams,
+      with_release_type: type === 'movie' ? '2|3|4|6' : undefined,
+      'vote_count.gte': 1,
+      'vote_average.gte': 1.0,
+      include_adult: false,
       language: LANGUAGE
     });
   }

@@ -55,7 +55,7 @@ class ContentSyncService {
       try {
         const providers = options.providers || this.supportedProviders;
         const contentTypes = options.contentTypes || ['movie', 'tv'];
-        const maxPages = options.maxPages || 3; // Reducido de 5 a 3 para sincronización más rápida
+        const maxPages = options.maxPages || 10; // Ampliar páginas para cubrir más catálogo
 
         // Obtener contenido actual para comparar
         // Usar IDs reales del storage (incluye no disponibles para marcar removidos correctamente)
@@ -145,11 +145,12 @@ class ContentSyncService {
           await this.delay(500);
         }
         
-        // Priorizar descubrimiento por fecha de lanzamiento para detectar novedades
-        let response = await tmdbService.discoverContent(type, providers, page, 'release_date.desc');
-        // Si no hay resultados con proveedores, intentar próximos estrenos sin filtro de proveedores
-        if (!response.results || response.results.length === 0) {
-          response = await tmdbService.discoverUpcomingContent(type, page, 90);
+        // Estrategia: primero recientes sin filtro de proveedores (captura amplio)
+        let response = await tmdbService.discoverRecentContent(type, page, 90);
+        // Si hay pocos, completar con OR de proveedores
+        if (!response.results || response.results.length < 20) {
+          const extra = await tmdbService.discoverContent(type, providers, page, 'release_date.desc');
+          response.results = [...(response.results || []), ...(extra.results || [])];
         }
         
         // Procesar items con pausas entre ellos
