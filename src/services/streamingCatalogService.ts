@@ -138,20 +138,13 @@ class StreamingAvailabilityClient {
     let page = 1;
     const pageSize = 100; // usar tamaño razonable
     while (true) {
-      const url = new URL(`${this.baseUrl}/catalog`);
-      url.searchParams.set('service', PLATFORM_IDS[platform]);
+      // Usar proxy local para evitar CORS y ocultar claves
+      const url = new URL(`/api/streaming/availability/${PLATFORM_IDS[platform]}`, window.location.origin);
       url.searchParams.set('country', this.country);
       url.searchParams.set('page', String(page));
       url.searchParams.set('page_size', String(pageSize));
-      // Si el API soporta tipo, podemos iterar 'movie' y 'series' aparte; aquí pedimos ambos
       url.searchParams.set('types', 'movie,tv');
-      const resp = await fetch(url.toString(), {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
-        }
-      });
+      const resp = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
       if (!resp.ok) {
         console.error('Error Streaming Availability:', resp.status, await resp.text());
         break;
@@ -211,15 +204,13 @@ class WatchmodeClient {
     const pageSize = 100;
     const sourceId = this.WATCHMODE_SOURCES[platform];
     while (true) {
-      const url = new URL('https://api.watchmode.com/v1/list-titles');
-      url.searchParams.set('apiKey', this.apiKey!);
+      // Usar proxy local
+      const url = new URL(`/api/streaming/watchmode/${PLATFORM_IDS[platform]}`, window.location.origin);
       url.searchParams.set('source_ids', String(sourceId));
       url.searchParams.set('countries', this.country);
       url.searchParams.set('page', String(page));
       url.searchParams.set('page_size', String(pageSize));
-      const resp = await fetch(url.toString(), {
-        headers: { 'Accept': 'application/json' }
-      });
+      const resp = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
       if (!resp.ok) { console.error('Error Watchmode:', resp.status, await resp.text()); break; }
       const data = await resp.json();
       const items = Array.isArray(data.titles) ? data.titles : [];

@@ -4,6 +4,7 @@ import { contentStorage } from '../services/contentStorage';
 import { contentSync } from '../services/contentSync';
 import { useContent, useNews, useTopContent } from '../hooks/useContent';
 import { Play, RefreshCw, CheckCircle, XCircle, AlertCircle, Film, Tv, Star } from 'lucide-react';
+import SyncStreamingCatalogs from '../components/SyncStreamingCatalogs';
 
 const TestTmdbIntegration: React.FC = () => {
   const [testResults, setTestResults] = useState<string[]>([]);
@@ -310,6 +311,14 @@ const TestTmdbIntegration: React.FC = () => {
     <div className="min-h-screen bg-background text-foreground p-6">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-white mb-6">Pruebas de Integración TMDb</h1>
+        {/* Nueva sección: sincronización de catálogos externos */}
+        <div className="bg-secondary rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+            <RefreshCw className="w-5 h-5" />
+            Catálogos Externos
+          </h2>
+          <SyncStreamingCatalogs />
+        </div>
         
         {/* Configuración */}
         <div className="bg-secondary rounded-lg p-6 mb-6">
