@@ -4,7 +4,7 @@
 
 const TMDB_BASE = 'https://api.themoviedb.org/3/';
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
     const apiKey = process.env.TMDB_API_KEY;
     if (!apiKey) {
@@ -69,4 +69,4 @@ module.exports = async (req, res) => {
     console.error('Error en proxy TMDb:', err);
     res.status(500).json({ error: 'Error interno en proxy TMDb', details: String(err && err.message || err) });
   }
-};
+}
