@@ -110,7 +110,7 @@ const ExploreReal: React.FC = () => {
           Tipo
         </label>
         <div className="space-y-2">
-          {['movie', 'tv', 'documental'].map(type => (
+          {(['movie', 'tv', 'documental'] as const).map(type => (
             <label key={type} className="flex items-center gap-3 cursor-pointer">
               <input
                 type="radio"
@@ -243,12 +243,12 @@ const ExploreReal: React.FC = () => {
           Período
         </label>
         <div className="space-y-2">
-          {[
-            { value: 'today', label: 'Hoy' },
-            { value: 'week', label: 'Esta semana' },
-            { value: 'month', label: 'Este mes' },
-            { value: 'all', label: 'Todo el tiempo' }
-          ].map(period => (
+          {([
+            { value: 'today' as const, label: 'Hoy' },
+            { value: 'week' as const, label: 'Esta semana' },
+            { value: 'month' as const, label: 'Este mes' },
+            { value: 'all' as const, label: 'Todo el tiempo' }
+          ]).map(period => (
             <label key={period.value} className="flex items-center gap-3 cursor-pointer">
               <input
                 type="radio"
@@ -271,7 +271,7 @@ const ExploreReal: React.FC = () => {
         </label>
         <select
           value={filters.sortBy || 'popularity'}
-          onChange={(e) => updateFilter('sortBy', e.target.value)}
+          onChange={(e) => updateFilter('sortBy', (e.target.value as 'popularity' | 'rating' | 'newest'))}
           className="w-full px-4 py-2 bg-secondary-light border border-secondary-dark rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="popularity">Popularidad</option>

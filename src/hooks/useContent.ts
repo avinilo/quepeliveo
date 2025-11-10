@@ -48,6 +48,8 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
     limit,
     strictTimeFilter = false
   } = options;
+  // Guardar el filtro temporal original para evitar problemas de estrechamiento de tipos
+  const originalTimeFilter = (options.timeFilter ?? 'all') as 'today' | 'week' | 'month' | 'all';
 
   const loadContent = useCallback(() => {
     try {
@@ -106,20 +108,17 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
         items = items.filter(item => (item.genres || []).includes(genreId));
       }
 
-      // Fallback si no hay resultados para filtros de tiempo (solo si no es estricto)
-      const effectiveStrict = strictTimeFilter || timeFilter === 'today';
-      if (items.length === 0 && !effectiveStrict) {
+      // Fallback si no hay resultados para filtros de tiempo
+      const strictToday = strictTimeFilter || timeFilter === 'today';
+      if (items.length === 0 && !strictToday) {
         // Priorizar fallback por provider/genre si existen
         if (providerId) {
           items = contentStorage.getContentByProvider(providerId);
         } else if (genreId) {
           items = contentStorage.getContentByGenre(genreId);
         } else {
-          // Cadena de fallback por tiempo
-          if (timeFilter === 'today') {
-            // Para "hoy" no hacemos más fallbacks; mantener vacío si no hay estrenos
-            items = [];
-          } else if (timeFilter === 'week') {
+          // Cadena de fallback por tiempo (evitar comparar con 'today' en este bloque)
+          if (timeFilter === 'week') {
             items = contentStorage.getThisMonthNews();
           }
 

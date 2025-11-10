@@ -287,10 +287,12 @@ const TestTmdbIntegration: React.FC = () => {
       lines.push(`=== ${label} (primeros 5) ===`);
       subset.forEach(item => {
         const firstSeenDates = Object.values(item.firstSeenAt || {});
-        const firstSeenStr = firstSeenDates[0] ? new Date(firstSeenDates[0]).toLocaleDateString('es-ES') : 'N/A';
+        const firstSeenStr = firstSeenDates.length > 0 && typeof firstSeenDates[0] === 'string'
+          ? new Date(firstSeenDates[0] as string).toLocaleDateString('es-ES')
+          : 'N/A';
         const platforms = listPlatforms(item).join(', ');
         const genres = (item.genres || []).join(', ');
-        const releaseStr = item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('es-ES') : 'N/A';
+        const releaseStr = item.releaseDate ? new Date(item.releaseDate as string).toLocaleDateString('es-ES') : 'N/A';
         lines.push(`  - ${item.title} | visto: ${firstSeenStr} | estreno: ${releaseStr} | plataformas: ${platforms} | géneros: ${genres}`);
       });
     };

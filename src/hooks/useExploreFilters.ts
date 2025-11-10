@@ -21,6 +21,14 @@ export interface FilterState {
   q: string; // parámetro de búsqueda
   // Modo estricto para novedades (usar firstSeenAt sin fallbacks)
   strictMode?: boolean;
+  // Campos utilizados por ExploreReal (UI en inglés)
+  type?: 'movie' | 'tv' | 'documental' | '';
+  genre?: string; // id de género TMDb como string
+  platform?: string; // id de proveedor TMDb como string
+  year?: string;
+  rating?: string;
+  timeFilter?: 'today' | 'week' | 'month' | 'all';
+  sortBy?: 'popularity' | 'rating' | 'newest';
 }
 
 const PLATFORMS = [
@@ -46,7 +54,15 @@ const initialFilters: FilterState = {
   pais: '',
   idioma: '',
   q: '',
-  strictMode: false
+  strictMode: false,
+  // Defaults para ExploreReal
+  type: '',
+  genre: '',
+  platform: '',
+  year: '',
+  rating: '',
+  timeFilter: 'all',
+  sortBy: 'popularity'
 };
 
 export const useExploreFilters = () => {
@@ -68,6 +84,28 @@ export const useExploreFilters = () => {
     // Cargar filtros individuales
     if (searchParams.get('timeWindow')) {
       urlFilters.timeWindow = searchParams.get('timeWindow') as TimeWindow;
+    }
+    // Compatibilidad con ExploreReal (UI en inglés)
+    if (searchParams.get('type')) {
+      urlFilters.type = (searchParams.get('type') as any) || '';
+    }
+    if (searchParams.get('genre')) {
+      urlFilters.genre = searchParams.get('genre') || '';
+    }
+    if (searchParams.get('platform')) {
+      urlFilters.platform = searchParams.get('platform') || '';
+    }
+    if (searchParams.get('year')) {
+      urlFilters.year = searchParams.get('year') || '';
+    }
+    if (searchParams.get('rating')) {
+      urlFilters.rating = searchParams.get('rating') || '';
+    }
+    if (searchParams.get('timeFilter')) {
+      urlFilters.timeFilter = searchParams.get('timeFilter') as any;
+    }
+    if (searchParams.get('sortBy')) {
+      urlFilters.sortBy = searchParams.get('sortBy') as any;
     }
     if (searchParams.get('platforms')) {
       urlFilters.platforms = searchParams.get('platforms')?.split(',') || [];
@@ -99,6 +137,28 @@ export const useExploreFilters = () => {
     
     if (filters.timeWindow !== initialFilters.timeWindow) {
       params.set('timeWindow', filters.timeWindow);
+    }
+    // Compatibilidad ExploreReal
+    if (filters.type && filters.type !== initialFilters.type) {
+      params.set('type', filters.type);
+    }
+    if (filters.genre && filters.genre !== initialFilters.genre) {
+      params.set('genre', filters.genre);
+    }
+    if (filters.platform && filters.platform !== initialFilters.platform) {
+      params.set('platform', filters.platform);
+    }
+    if (filters.year && filters.year !== initialFilters.year) {
+      params.set('year', filters.year);
+    }
+    if (filters.rating && filters.rating !== initialFilters.rating) {
+      params.set('rating', filters.rating);
+    }
+    if (filters.timeFilter && filters.timeFilter !== initialFilters.timeFilter) {
+      params.set('timeFilter', filters.timeFilter);
+    }
+    if (filters.sortBy && filters.sortBy !== initialFilters.sortBy) {
+      params.set('sortBy', filters.sortBy);
     }
     if (filters.platforms.length > 0) {
       params.set('platforms', filters.platforms.join(','));
@@ -291,6 +351,8 @@ export const useExploreFilters = () => {
     generos: GENEROS,
     updateFilter,
     toggleArrayFilter,
+    // Alias para compatibilidad con ExploreReal
+    toggleFilter: toggleArrayFilter,
     resetFilters,
     removeFilter,
     setShowExtendedFilters,

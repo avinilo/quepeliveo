@@ -103,7 +103,7 @@ export const TmdbConnectionTest: React.FC<ConnectionTestProps> = ({ className = 
           <button
             onClick={testConnection}
             className="text-sm text-primary hover:text-primary-dark transition-colors"
-            disabled={status === 'testing'}
+            disabled={false}
           >
             Reintentar
           </button>

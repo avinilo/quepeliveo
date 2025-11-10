@@ -11,6 +11,12 @@ interface Movie {
   platform: string;
   poster: string;
   description: string;
+  // Campos adicionales opcionales usados en componentes de demo
+  daysUntilRelease?: number;
+  position?: number;
+  badge?: string;
+  duration?: number;
+  tone?: string;
 }
 
 interface ContentCardProps {

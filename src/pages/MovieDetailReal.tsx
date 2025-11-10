@@ -4,7 +4,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ContentGridReal from '../components/ContentGridReal';
 import { Play, Plus, Share, Star, Calendar, Clock, Globe, ChevronLeft, ChevronRight, Heart } from 'lucide-react';
-import { tmdbService, ContentItem } from '../services/tmdb';
+import { tmdbService, ContentItem, TmdbProvider } from '../services/tmdb';
 import { useContent } from '../hooks/useContent';
 
 interface CastMember {
@@ -24,38 +24,51 @@ const MovieDetailReal: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [cast, setCast] = useState<CastMember[]>([]);
 
-  // Obtener contenido relacionado
-  const { content: relatedContent } = useContent({
-    genreId: movie?.genre_ids?.[0],
-    limit: 6,
-    sortBy: 'popularity.desc'
-  });
+  // No cargamos contenido relacionado aquí; lo pedimos más abajo con ContentGridReal
 
   useEffect(() => {
     const loadMovieDetails = async () => {
       if (!id) return;
-      
+
       setLoading(true);
       setError('');
-      
+
       try {
-        // Determinar si es película o serie basándonos en el ID
-        const movieId = parseInt(id);
-        
-        // Intentar cargar como película primero
-        let movieData = await tmdbService.getMovieDetails(movieId);
-        
-        if (movieData) {
-          setMovie(movieData);
-          
-          // Cargar elenco
+        // ID puede venir como "movie_123" o "tv_456"
+        let type: 'movie' | 'tv' = 'movie';
+        let tmdbId: number | null = null;
+
+        if (id.includes('_')) {
+          const [prefix, num] = id.split('_');
+          if (prefix === 'tv' || prefix === 'movie') {
+            type = prefix as 'movie' | 'tv';
+          }
+          tmdbId = parseInt(num, 10);
+        } else {
+          // Fallback: si el id es solo número, asumir película
+          tmdbId = parseInt(id, 10);
+        }
+
+        if (!tmdbId || Number.isNaN(tmdbId)) {
+          throw new Error('ID de contenido inválido');
+        }
+
+        // Cargar detalles según el tipo
+        const details = type === 'movie'
+          ? await tmdbService.getMovieDetails(tmdbId)
+          : await tmdbService.getTVDetails(tmdbId);
+
+        const processed = tmdbService.processContentProviders(details, type);
+        if (processed) {
+          setMovie(processed);
+          // Cargar elenco desde detalles
           try {
-            const credits = await tmdbService.getMovieCredits(movieId);
-            const castData = credits.cast.slice(0, 6).map((member: any) => ({
+            const credits = details.credits;
+            const castData = (credits?.cast || []).slice(0, 6).map((member: any) => ({
               id: member.id,
               name: member.name,
               character: member.character,
-              image: member.profile_path 
+              image: member.profile_path
                 ? tmdbService.getImageUrl(member.profile_path, 'w185')
                 : 'https://via.placeholder.com/185x278?text=No+Image'
             }));
@@ -79,8 +92,8 @@ const MovieDetailReal: React.FC = () => {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: movie?.title || movie?.name || '',
-        text: `Mira ${movie?.title || movie?.name} en QuePeliVeo`,
+        title: movie?.title || '',
+        text: `Mira ${movie?.title} en QuePeliVeo`,
         url: window.location.href
       });
     } else {
@@ -91,7 +104,7 @@ const MovieDetailReal: React.FC = () => {
 
   const getReleaseYear = () => {
     if (!movie) return '';
-    const date = movie.release_date || movie.first_air_date;
+    const date = movie.releaseDate;
     return date ? new Date(date).getFullYear() : '';
   };
 
@@ -103,17 +116,26 @@ const MovieDetailReal: React.FC = () => {
   };
 
   const getGenres = () => {
-    return movie?.genres?.map(g => g.name).join(', ') || '';
+    // ContentItem.genres es number[]; no tenemos nombres aquí
+    return '';
   };
 
   const getProvidersByModality = () => {
-    if (!movie?.providers) return { included: [], rental: [], purchase: [] };
-    
-    const included = movie.providers.filter(p => p.monetization_type === 'flatrate');
-    const rental = movie.providers.filter(p => p.monetization_type === 'rent');
-    const purchase = movie.providers.filter(p => p.monetization_type === 'buy');
-    
+    if (!movie?.providers) return { included: [] as TmdbProvider[], rental: [] as TmdbProvider[], purchase: [] as TmdbProvider[] };
+    const included = movie.providers.flatrate || [];
+    const rental = movie.providers.rent || [];
+    const purchase = movie.providers.buy || [];
     return { included, rental, purchase };
+  };
+
+  const hasAnyProviders = () => {
+    if (!movie?.providers) return false;
+    const all = [
+      ...(movie.providers.flatrate || []),
+      ...(movie.providers.rent || []),
+      ...(movie.providers.buy || [])
+    ];
+    return all.length > 0;
   };
 
   if (loading) {
@@ -158,10 +180,10 @@ const MovieDetailReal: React.FC = () => {
       
       {/* Hero Section con backdrop */}
       <div className="relative h-[60vh] md:h-[70vh] overflow-hidden">
-        {movie.backdrop_path ? (
+        {movie.backdropPath ? (
           <img 
-            src={tmdbService.getImageUrl(movie.backdrop_path, 'original')}
-            alt={movie.title || movie.name || ''}
+            src={tmdbService.getImageUrl(movie.backdropPath, 'original')}
+            alt={movie.title || ''}
             className="absolute inset-0 w-full h-full object-cover"
           />
         ) : (
@@ -174,11 +196,11 @@ const MovieDetailReal: React.FC = () => {
             {/* Póster */}
             <div className="flex-shrink-0">
               <img 
-                src={movie.poster_path 
-                  ? tmdbService.getImageUrl(movie.poster_path, 'w500')
+                src={movie.posterPath 
+                  ? tmdbService.getImageUrl(movie.posterPath, 'w500')
                   : 'https://via.placeholder.com/500x750?text=No+Image'
                 }
-                alt={movie.title || movie.name || ''}
+                alt={movie.title || ''}
                 className="w-32 md:w-48 lg:w-64 rounded-lg shadow-2xl"
               />
             </div>
@@ -193,18 +215,18 @@ const MovieDetailReal: React.FC = () => {
                 <ChevronRight className="w-4 h-4" />
                 <span className="text-primary">{getGenres().split(', ')[0] || 'Sin categoría'}</span>
                 <ChevronRight className="w-4 h-4" />
-                <span>{movie.title || movie.name}</span>
+                <span>{movie.title}</span>
               </div>
               
               {/* Badges */}
               <div className="flex flex-wrap gap-2 mb-4">
-                {movie.providers && movie.providers.length > 0 && (
+                {hasAnyProviders() && (
                   <span className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-medium">
                     Disponible en streaming
                   </span>
                 )}
                 <span className="bg-accent text-white px-3 py-1 rounded-full text-sm font-medium">
-                  {movie.vote_average >= 8 ? 'Excelente' : movie.vote_average >= 7 ? 'Muy buena' : 'Buena'}
+                  {movie.voteAverage >= 8 ? 'Excelente' : movie.voteAverage >= 7 ? 'Muy buena' : 'Buena'}
                 </span>
                 {movie.runtime && (
                   <span className="bg-secondary-light text-white px-3 py-1 rounded-full text-sm font-medium">
@@ -215,11 +237,11 @@ const MovieDetailReal: React.FC = () => {
               
               {/* Título y metadatos */}
               <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-2">
-                {movie.title || movie.name} <span className="text-gray-400">({getReleaseYear()})</span>
+                {movie.title} <span className="text-gray-400">({getReleaseYear()})</span>
               </h1>
               
               <div className="flex flex-wrap items-center gap-4 text-sm text-gray-300 mb-6">
-                <span>{movie.media_type === 'movie' ? 'Película' : 'Serie'}</span>
+                <span>{movie.type === 'movie' ? 'Película' : 'Serie'}</span>
                 {movie.runtime && (
                   <>
                     <span>·</span>
@@ -234,16 +256,20 @@ const MovieDetailReal: React.FC = () => {
                 <span>·</span>
                 <span className="flex items-center gap-1">
                   <Star className="w-4 h-4 text-accent" />
-                  {movie.vote_average.toFixed(1)} ({movie.vote_count.toLocaleString()} votos)
+                  {movie.voteAverage.toFixed(1)} ({movie.voteCount.toLocaleString()} votos)
                 </span>
               </div>
               
               {/* Plataformas disponibles */}
-              {movie.providers && movie.providers.length > 0 && (
+              {hasAnyProviders() && (
                 <div className="mb-6">
                   <p className="text-sm text-gray-300 mb-3">Disponible en España:</p>
                   <div className="flex flex-wrap gap-3">
-                    {movie.providers.slice(0, 3).map((platform) => (
+                    {[
+                      ...(movie.providers.flatrate || []),
+                      ...(movie.providers.rent || []),
+                      ...(movie.providers.buy || [])
+                    ].slice(0, 3).map((platform) => (
                       <div key={platform.provider_id} className="flex items-center space-x-2 bg-secondary-light rounded-lg px-3 py-2">
                         <div className="w-6 h-6 bg-primary rounded flex items-center justify-center text-white font-bold text-xs">
                           {platform.provider_name.charAt(0)}
@@ -251,9 +277,17 @@ const MovieDetailReal: React.FC = () => {
                         <span className="text-white text-sm">{platform.provider_name}</span>
                       </div>
                     ))}
-                    {movie.providers.length > 3 && (
+                    {([
+                      ...(movie.providers.flatrate || []),
+                      ...(movie.providers.rent || []),
+                      ...(movie.providers.buy || [])
+                    ].length > 3) && (
                       <div className="bg-secondary-light rounded-lg px-3 py-2">
-                        <span className="text-white text-sm">+{movie.providers.length - 3}</span>
+                        <span className="text-white text-sm">+{([
+                          ...(movie.providers.flatrate || []),
+                          ...(movie.providers.rent || []),
+                          ...(movie.providers.buy || [])
+                        ].length - 3)}</span>
                       </div>
                     )}
                   </div>
@@ -365,19 +399,19 @@ const MovieDetailReal: React.FC = () => {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-400">Director:</span>
-                <span className="text-white">{movie.director || 'No especificado'}</span>
+                <span className="text-white">No especificado</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">País:</span>
-                <span className="text-white">{movie.production_countries?.[0]?.name || 'Estados Unidos'}</span>
+                <span className="text-white">No disponible</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Idiomas:</span>
-                <span className="text-white">{movie.spoken_languages?.[0]?.name || 'Inglés'}</span>
+                <span className="text-white">No disponible</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Presupuesto:</span>
-                <span className="text-white">{movie.budget ? `$${(movie.budget / 1000000).toFixed(1)}M` : 'No disponible'}</span>
+                <span className="text-white">No disponible</span>
               </div>
             </div>
           </div>
@@ -389,23 +423,14 @@ const MovieDetailReal: React.FC = () => {
                 <span className="text-gray-400">Rating:</span>
                 <span className="text-white flex items-center gap-1">
                   <Star className="w-4 h-4 text-accent" />
-                  {movie.vote_average.toFixed(1)}/10
+                  {movie.voteAverage.toFixed(1)}/10
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Votos:</span>
-                <span className="text-white">{movie.vote_count.toLocaleString()}</span>
+                <span className="text-white">{movie.voteCount.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Popularidad:</span>
-                <span className="text-white">{movie.popularity.toFixed(1)}</span>
-              </div>
-              {movie.revenue && (
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Recaudación:</span>
-                  <span className="text-white">${(movie.revenue / 1000000).toFixed(1)}M</span>
-                </div>
-              )}
+              {/* Popularidad y recaudación no están en ContentItem */}
             </div>
           </div>
         </div>
@@ -430,18 +455,18 @@ const MovieDetailReal: React.FC = () => {
           </div>
         )}
 
-        {/* Contenido relacionado */}
-        {relatedContent && relatedContent.length > 0 && (
-          <div>
-            <h3 className="text-xl font-semibold mb-4">Contenido relacionado</h3>
-            <ContentGridReal 
-              content={relatedContent}
-              size="small"
-              columns={{ xs: 2, sm: 3, md: 4, lg: 6 }}
-              showLoading={false}
-            />
-          </div>
-        )}
+        {/* Contenido relacionado: por género principal */}
+        <div>
+          <h3 className="text-xl font-semibold mb-4">Contenido relacionado</h3>
+          <ContentGridReal 
+            size="small"
+            columns={{ xs: 2, sm: 3, md: 4, lg: 6 }}
+            showLoading={false}
+            genreId={movie.genres?.[0]}
+            sortBy="popularity"
+            limit={6}
+          />
+        </div>
       </div>
       
       <Footer />

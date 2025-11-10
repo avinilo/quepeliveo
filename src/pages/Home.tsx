@@ -14,70 +14,6 @@ import Footer from '../components/Footer';
 import CTAFinal from '../components/CTAFinal';
 import { contentSync } from '../services/contentSync';
 
-// Datos de ejemplo - Mobile-first con pocas películas
-const mockMovies: Movie[] = [
-  {
-    id: 1,
-    title: 'El Origen',
-    year: 2010,
-    rating: 8.8,
-    genre: 'Ciencia Ficción',
-    platform: 'Netflix',
-    poster: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=Inception%20movie%20poster%20with%20spinning%20top%20and%20city%20folding%20dream%20sequence%2C%20dark%20mysterious%20atmosphere%2C%20high%20quality%20cinema%20poster&image_size=portrait_4_3',
-    description: 'Un ladrón que roba secretos a través de los sueños.'
-  },
-  {
-    id: 2,
-    title: 'Parásitos',
-    year: 2019,
-    rating: 8.5,
-    genre: 'Drama',
-    platform: 'Prime Video',
-    poster: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=Parasite%20Korean%20movie%20poster%20with%20family%20members%20and%20house%20stairs%2C%20minimalist%20design%2C%20dark%20comedy%20style&image_size=portrait_4_3',
-    description: 'Una familia pobre se infiltra en una familia rica.'
-  },
-  {
-    id: 3,
-    title: 'Interestelar',
-    year: 2014,
-    rating: 8.6,
-    genre: 'Ciencia Ficción',
-    platform: 'Disney+',
-    poster: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=Interstellar%20movie%20poster%20with%20spacecraft%20and%20black%20hole%2C%20epic%20space%20scene%2C%20scientific%20accuracy%2C%20dramatic%20lighting&image_size=portrait_4_3',
-    description: 'Un viaje espacial para salvar a la humanidad.'
-  },
-  {
-    id: 4,
-    title: 'La La Land',
-    year: 2016,
-    rating: 8.0,
-    genre: 'Musical',
-    platform: 'Max',
-    poster: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=La%20La%20Land%20musical%20movie%20poster%20with%20couple%20dancing%20and%20Los%20Angeles%20sunset%2C%20vibrant%20colors%2C%20romantic%20atmosphere%2C%20retro%20style&image_size=portrait_4_3',
-    description: 'Una historia de amor entre un músico y una actriz.'
-  },
-  {
-    id: 5,
-    title: 'Joker',
-    year: 2019,
-    rating: 8.4,
-    genre: 'Drama',
-    platform: 'Filmin',
-    poster: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=Joker%20movie%20poster%20with%20Joaquin%20Phoenix%20character%20in%20clown%20makeup%2C%20dark%20psychological%20thriller%20style%2C%20intense%20portrait&image_size=portrait_4_3',
-    description: 'El origen del villano más icónico de Gotham.'
-  },
-  {
-    id: 6,
-    title: 'Soul',
-    year: 2020,
-    rating: 8.1,
-    genre: 'Animación',
-    platform: 'Disney+',
-    poster: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=Soul%20Pixar%20movie%20poster%20with%20jazz%20musician%20and%20colorful%20soul%20world%2C%20animated%20style%2C%20vibrant%20colors%2C%20musical%20theme&image_size=portrait_4_3',
-    description: 'Un viaje filosófico sobre el propósito de la vida.'
-  }
-];
-
 const Home: React.FC = () => {
   const [apiKeyConfigured, setApiKeyConfigured] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -111,7 +47,7 @@ const Home: React.FC = () => {
     
     setIsSyncing(true);
     try {
-      await contentSync.fullSync();
+      await contentSync.forceFullSync({ maxPages: 5 });
       console.log('Sincronización inicial completada');
     } catch (error) {
       console.error('Error en sincronización inicial:', error);

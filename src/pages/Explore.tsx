@@ -164,18 +164,22 @@ const Explore: React.FC = () => {
           Tipo
         </label>
         <div className="space-y-2">
-          {['Película', 'Serie', 'Documental'].map(type => (
-            <label key={type} className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="radio"
-                name="type"
-                checked={filters.type === type}
-                onChange={() => updateFilter('type', type)}
-                className="text-primary bg-secondary-light border-secondary-dark focus:ring-primary"
-              />
-              <span className="text-gray-300 text-sm">{type}</span>
-            </label>
-          ))}
+          {(['Película', 'Serie', 'Documental'] as const).map(label => {
+            const typeValue: '' | 'movie' | 'tv' | 'documental' =
+              label === 'Película' ? 'movie' : label === 'Serie' ? 'tv' : 'documental';
+            return (
+              <label key={label} className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="type"
+                  checked={filters.type === typeValue}
+                  onChange={() => updateFilter('type', typeValue)}
+                  className="text-primary bg-secondary-light border-secondary-dark focus:ring-primary"
+                />
+                <span className="text-gray-300 text-sm">{label}</span>
+              </label>
+            );
+          })}
           <button
             onClick={() => updateFilter('type', '')}
             className="text-primary hover:text-primary/80 text-sm transition-colors"
@@ -346,7 +350,7 @@ const Explore: React.FC = () => {
               <div className="mb-6">
                 <h3 className="text-white font-medium mb-3">Filtros activos:</h3>
                 <div className="flex flex-wrap gap-2">
-                  {Object.entries(filters).map(([key, value]) => {
+                  {Object.entries(filters as Record<string, any>).map(([key, value]) => {
                     if (!value || key === 'q') return null;
                     return (
                       <span
@@ -355,7 +359,7 @@ const Explore: React.FC = () => {
                       >
                         {value}
                         <button
-                          onClick={() => updateFilter(key, '')}
+                          onClick={() => updateFilter(key as any, '') as any}
                           className="text-primary-foreground/80 hover:text-primary-foreground transition-colors"
                         >
                           <X className="w-3 h-3" />
